@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify
 import sqlite3
 
 app = Flask(__name__)
@@ -8,7 +8,7 @@ def create_database():
     conn = sqlite3.connect('employees.db')
     cursor = conn.cursor()
 
-    # Create employees table if it does not already exist
+    # Create employees table 
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS employees (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,10 +26,60 @@ def create_database():
 # Call the function
 create_database()
 
+def update_db():
+    conn = sqlite3.connect('employees.db')
+    cursor = conn.cursor()
+
+    # Check if table is empty
+    cursor.execute("SELECT COUNT(*) FROM employees")
+    count = cursor.fetchone()[0]
+
+    # Sample data to insert into the employees table
+    employees_data = [
+            ('Alice Smith', 'HR', 65000.0),
+            ('Bob Jones', 'Engineering', 85000.0),
+            ('Charlie Brown', 'Marketing', 55000.0),
+            ('Diana Prince', 'Legal', 95000.0),
+            ('Evan Wright', 'Finance', 72000.0)
+        ]
+    if count == 0:
+        cursor.executemany('''
+                INSERT INTO employees (name, department, salary) 
+                VALUES (?, ?, ?)
+            ''', employees_data)
+
+    conn.commit()
+    conn.close()
+    print("Database updated with new employee records.")
+
+#call the function
+update_db()
+
 # Home route
 @app.route('/')
 def home():
     return "Employee Database created successfully!"
+
+#Route to get data in database ( GET METHOD )
+@app.route('/employees', methods = ['GET'])
+def get_employees():
+    conn = sqlite3.connect('employees.db')
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT * FROM employees')
+    employees = cursor.fetchall()
+
+    employee_list = [
+        {
+            "id": row[0],
+            "name": row[1],
+            "department": row[2],
+            "salary": row[3]
+        }
+        for row in employees
+    ]
+
+    return jsonify(employee_list), 200
 
 # Run the Flask app
 if __name__ == '__main__':
