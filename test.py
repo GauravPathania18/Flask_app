@@ -81,6 +81,27 @@ def get_employees():
 
     return jsonify(employee_list), 200
 
+
+@app.route('/employees/<int:employee_id>', methods=['GET']) 
+def get_employee_by_id(employee_id):
+    conn = sqlite3.connect('employees.db')
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT * FROM employees WHERE id = ?', (employee_id,))
+    employee = cursor.fetchone()
+
+    if employee:
+        employee_data = {
+            "id": employee[0],
+            "name": employee[1],
+            "department": employee[2],
+            "salary": employee[3]
+        }
+        return jsonify(employee_data), 200
+    else:
+        return jsonify({"error": "Employee not found"}), 404
+
+
 # Run the Flask app
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
