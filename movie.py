@@ -1,5 +1,4 @@
 from flask import Flask, jsonify
-import sqlite3
 import random
 
 app = Flask(__name__)
