@@ -9,7 +9,7 @@ instance/
 
 # Local SQLite database
 employees.db
-
+books.db
 # Editor and OS files
 *.swp
 .DS_Store
