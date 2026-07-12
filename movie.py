@@ -13,7 +13,8 @@ movies_list = [
     "Forrest Gump",
     "Spirited Away",
     "Gladiator",
-    "Avatar"
+    "Avatar",
+    "The Odessy"
 ]
 
 @app.route('/')
