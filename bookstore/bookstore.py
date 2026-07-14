@@ -68,6 +68,19 @@ def insert_book(title, author, price, stock_quantity):
     connection.close()
     return new_id
 
+def update_book(book_id, title, author, price, stock_quantity):
+    connection = sqlite3.connect("books.db")
+    cursor = connection.cursor()
+    cursor.execute("""
+        UPDATE books
+        SET title=?, author=?, price=?, stock_quantity=?
+        WHERE id=?
+    """, (title, author, price, stock_quantity, book_id))
+    connection.commit()
+    updated_rows = cursor.rowcount #returns no. of rows affected : 1= success, 0= no rows updated
+    connection.close()
+    return updated_rows
+
 #--------------------
 # ----Routes---------
 #--------------------
@@ -79,6 +92,7 @@ def home():
 def fetch_books():
     return jsonify({"books": get_all_books()}), 200
 
+# GET /books/<id>
 @app.route("/books/<int:book_id>", methods=['GET'])
 def fetch_book(book_id):
     book = get_book_by_id(book_id)
@@ -98,6 +112,25 @@ def add_book():
     new_id = insert_book(data["title"], data["author"], data["price"], data["stock_quantity"])
     return jsonify({"message": "Book added successfully!", "id": new_id}), 201
 
+#PUT /books/<id>
+@app.route("/books/<int:book_id>", methods=['PUT'])
+def update_book_details(book_id):
+    data = request.get_json()
+
+    # Validate input
+    if not data or not all(k in data for k in ("title", "author", "price", "stock_quantity")):
+        return jsonify({"error": "Invalid request. Provide title, author, price, and stock_quantity"}), 400
+
+    # Check if book exists
+    if not get_book_by_id(book_id):
+        return jsonify({"error": "Book not found"}), 404
+
+    # Update book
+    updated = update_book(book_id, data["title"], data["author"], data["price"], data["stock_quantity"])
+    if updated:
+        return jsonify({"message": "Book updated successfully!"}), 200
+    else:
+        return jsonify({"error": "Update failed"}), 500
 # Run app
 if __name__ == "__main__":
     init_db()  # ensure table exists before starting
