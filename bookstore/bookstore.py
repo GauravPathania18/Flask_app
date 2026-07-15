@@ -81,6 +81,15 @@ def update_book(book_id, title, author, price, stock_quantity):
     connection.close()
     return updated_rows
 
+def delete_book(book_id):
+    connection = sqlite3.connect("books.db")
+    cursor = connection.cursor()
+    cursor.execute("DELETE FROM books WHERE id=?", (book_id,))
+    connection.commit()
+    deleted_rows = cursor.rowcount
+    connection.close()
+    return deleted_rows
+
 #--------------------
 # ----Routes---------
 #--------------------
@@ -131,6 +140,18 @@ def update_book_details(book_id):
         return jsonify({"message": "Book updated successfully!"}), 200
     else:
         return jsonify({"error": "Update failed"}), 500
+
+# 2️⃣ DELETE /books/<id> → Delete book by ID
+@app.route("/books/<int:book_id>", methods=['DELETE'])
+def delete_book_by_id(book_id):
+    if not get_book_by_id(book_id):
+        return jsonify({"error": "Book not found"}), 404
+
+    deleted = delete_book(book_id)
+    if deleted:
+        return jsonify({"message": f"Book with ID {book_id} deleted successfully!"}), 200
+    else:
+        return jsonify({"error": "Delete failed"}), 500
 # Run app
 if __name__ == "__main__":
     init_db()  # ensure table exists before starting
