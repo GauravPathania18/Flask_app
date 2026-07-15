@@ -16,6 +16,15 @@ def init_db():
         stock_quantity INTEGER
     )
     """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS deleted_books (
+        id INTEGER PRIMARY KEY,
+        title TEXT,
+        author TEXT,
+        price INTEGER,
+        stock_quantity INTEGER
+    )
+    """)
     connection.commit()
     connection.close()
     print("✅ Database and 'books' table created successfully!")
@@ -84,6 +93,7 @@ def update_book(book_id, title, author, price, stock_quantity):
 def delete_book(book_id):
     connection = sqlite3.connect("books.db")
     cursor = connection.cursor()
+    cursor.execute("INSERT INTO deleted_books SELECT * FROM books WHERE id=?", (book_id,))
     cursor.execute("DELETE FROM books WHERE id=?", (book_id,))
     connection.commit()
     deleted_rows = cursor.rowcount
@@ -141,7 +151,7 @@ def update_book_details(book_id):
     else:
         return jsonify({"error": "Update failed"}), 500
 
-# 2️⃣ DELETE /books/<id> → Delete book by ID
+# DELETE /books/<id> → Delete book by ID
 @app.route("/books/<int:book_id>", methods=['DELETE'])
 def delete_book_by_id(book_id):
     if not get_book_by_id(book_id):
@@ -152,6 +162,25 @@ def delete_book_by_id(book_id):
         return jsonify({"message": f"Book with ID {book_id} deleted successfully!"}), 200
     else:
         return jsonify({"error": "Delete failed"}), 500
+    
+# RESTORE ENDPOINT(using archive table)
+@app.route("/books/<int:book_id>/restore", methods=['POST'])
+def restore_book(book_id):
+    connection = sqlite3.connect("books.db")
+    cursor = connection.cursor()
+
+    # Move book back from deleted_books to books
+    cursor.execute("INSERT INTO books SELECT * FROM deleted_books WHERE id=?", (book_id,))
+    cursor.execute("DELETE FROM deleted_books WHERE id=?", (book_id,))
+    connection.commit()
+    restored = cursor.rowcount
+    connection.close()
+
+    if restored:
+        return jsonify({"message": f"Book with ID {book_id} restored successfully!"}), 200
+    else:
+        return jsonify({"error": "Book not found in archive"}), 404
+
 # Run app
 if __name__ == "__main__":
     init_db()  # ensure table exists before starting
